@@ -40,7 +40,7 @@ public class RegistrationService {
 
     @Transactional
     public RegistrationResponse registerUser(Long eventId, RegisterUserRequest request){
-        Event event = findEventById(eventId);
+        Event event = findEventByIdForUpdate(eventId);
         User user = findUserById(request.getUserId());
 
         if(event.getStatus() != EventStatus.OPEN){
@@ -81,7 +81,7 @@ public class RegistrationService {
 
     @Transactional
     public void cancelRegistration(Long eventId, Long userId){
-        Event event = findEventById(eventId);
+        Event event = findEventByIdForUpdate(eventId);
         User user = findUserById(userId);
 
         Registration registration = registrationRepository
@@ -91,14 +91,10 @@ public class RegistrationService {
         boolean wasConfirmed = registration.getStatus() == RegistrationStatus.CONFIRMED;
         registration.cancel();
         if(wasConfirmed){
-            Optional<Registration> nextWaitlisted = registrationRepository.findFirstByEventAndStatusOrderByRegisteredAtAsc(
+            registrationRepository.findFirstByEventAndStatusOrderByRegisteredAtAsc(
                     event,
                     RegistrationStatus.WAITLISTED
-            );
-            if(nextWaitlisted.isPresent()){
-                Registration nextRegistration = nextWaitlisted.get();
-                nextRegistration.confirm();
-            }
+            ).ifPresent(Registration::confirm);
         }
     }
 
@@ -119,13 +115,18 @@ public class RegistrationService {
         );
     }
 
-    private Event findEventById(Long id){
-        return eventRepository.findById(id)
+    private Event findEventById(Long eventId){
+        return eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
     }
 
-    private User findUserById(Long id){
-        return userRepository.findById(id)
+    private User findUserById(Long userId){
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    private Event findEventByIdForUpdate(Long eventId){
+        return eventRepository.findByIdForUpdate(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found"));
     }
 }
