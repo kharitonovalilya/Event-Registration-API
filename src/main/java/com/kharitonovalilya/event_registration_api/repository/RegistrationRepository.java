@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
-    boolean existsByEventAndUserAndStatusIn(Event event, User user, List<Registration> statuses);
+    boolean existsByEventAndUserAndStatusIn(Event event, User user, List<RegistrationStatus> statuses);
 
     long countByEventAndStatus(Event event, RegistrationStatus status);
 
     List<Registration> findByEvent(Event event);
 
-    Optional<Registration> findByEventAndUserAndStatusIn(Event event, User user, List<Registration> statuses);
+    Optional<Registration> findByEventAndUserAndStatusIn(Event event, User user, List<RegistrationStatus> statuses);
 
-    Optional<Registration> findFirstByEventAndUserAndStatusIn(Event event, User user, List<Registration> statuses);
+    Optional<Registration> findFirstByEventAndStatusOrderByRegisteredAtAsc(Event event, RegistrationStatus status);
 }
