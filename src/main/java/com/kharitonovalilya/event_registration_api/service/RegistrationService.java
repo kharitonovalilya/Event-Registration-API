@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class RegistrationService {
@@ -50,6 +49,8 @@ public class RegistrationService {
         if(registrationRepository.existsByEventAndUserAndStatusIn(event, user, ACTIVE_STATUSES)){
             throw new ConflictException("User is already registered for this event");
         }
+
+        ensureUserHasNoOverlappingRegistration(user, event);
 
         long confirmedCount = registrationRepository.countByEventAndStatus(event, RegistrationStatus.CONFIRMED);
         Registration registration;
@@ -128,5 +129,20 @@ public class RegistrationService {
     private Event findEventByIdForUpdate(Long eventId){
         return eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
+    }
+
+    private void ensureUserHasNoOverlappingRegistration(User user, Event targetEvent){
+        List<Registration> activeRegistrations = registrationRepository.findByUserAndStatusIn(user, ACTIVE_STATUSES);
+        for(Registration registration : activeRegistrations){
+            Event existingEvent = registration.getEvent();
+
+            if(eventsOverlap(existingEvent, targetEvent)){
+                throw new ConflictException("User already has an active registration for overlapping event");
+            }
+        }
+    }
+
+    private boolean eventsOverlap(Event firstEvent, Event secondEvent){
+        return (firstEvent.getStartsAt().isBefore(secondEvent.getEndsAt())) && (secondEvent.getStartsAt().isBefore(firstEvent.getEndsAt()));
     }
 }

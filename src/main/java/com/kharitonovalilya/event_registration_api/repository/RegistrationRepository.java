@@ -19,4 +19,6 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
     Optional<Registration> findByEventAndUserAndStatusIn(Event event, User user, List<RegistrationStatus> statuses);
 
     Optional<Registration> findFirstByEventAndStatusOrderByRegisteredAtAsc(Event event, RegistrationStatus status);
+
+    List<Registration> findByUserAndStatusIn(User user, List<RegistrationStatus> statuses);
 }
