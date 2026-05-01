@@ -4,9 +4,12 @@ import com.kharitonovalilya.event_registration_api.dto.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -65,6 +68,43 @@ public class GlobalExceptionHandler {
             request.getRequestURI()
         );
     }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMissingOrInvalidRequestBody(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request
+    ){
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Request body is missing or invalid",
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException exception,
+            HttpServletRequest request
+    ){
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "Endpoint not found",
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException exception,
+            HttpServletRequest request
+    ){
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Invalid parameter value: " + exception.getName(),
+                request.getRequestURI()
+        );
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(
