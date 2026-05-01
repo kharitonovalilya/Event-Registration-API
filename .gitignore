@@ -42,3 +42,7 @@ build/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Postman ###
+/.postman/
+/postman/

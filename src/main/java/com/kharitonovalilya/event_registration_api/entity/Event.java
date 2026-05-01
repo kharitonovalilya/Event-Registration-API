@@ -95,8 +95,7 @@ public class Event {
     public void cancel() {
         this.status = EventStatus.CANCELLED;
     }
-
-    public void reOpen() {
+    public void reopen() {
         this.status = EventStatus.OPEN;
     }
 }
