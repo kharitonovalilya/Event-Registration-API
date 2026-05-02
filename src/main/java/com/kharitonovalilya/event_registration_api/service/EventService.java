@@ -14,6 +14,7 @@ import com.kharitonovalilya.event_registration_api.repository.RegistrationReposi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,9 @@ public class EventService {
                 request.getEndsAt(),
                 request.getCapacity()
         );
+
+        validateEventDates(event.getStartsAt(), event.getEndsAt());
+
         Event savedEvent = eventRepository.save(event);
         return EventResponse.from(savedEvent);
     }
@@ -91,12 +95,19 @@ public class EventService {
         }
 
         switch (request.getStatus()) {
-            case OPEN -> event.reopen();
-            case CLOSED -> event.close();
-            case CANCELLED -> cancelEvent(event);
-            default -> throw new BadRequestException("Unsupported event status");
+            case OPEN:
+                ensureEventCanBeOpened(event);
+                event.reopen();
+                break;
+            case CLOSED:
+                event.close();
+                break;
+            case CANCELLED:
+                cancelEvent(event);
+                break;
+            default:
+                throw new BadRequestException("Unsupported event status");
         }
-
         return EventResponse.from(event);
     }
 
@@ -110,6 +121,25 @@ public class EventService {
         List<Registration> activeRegistrations = registrationRepository.findByEventAndStatusIn(event, ACTIVE_STATUSES);
         for(Registration registration : activeRegistrations){
             registration.cancel();
+        }
+    }
+
+    private void ensureEventCanBeOpened(Event event){
+        LocalDateTime now = LocalDateTime.now();
+        if (!event.getStartsAt().isAfter(now)) {
+            throw new BadRequestException("Cannot open registration for an event that has already started or passed");
+        }
+    }
+
+    private void validateEventDates(LocalDateTime startsAt, LocalDateTime endsAt) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!startsAt.isAfter(now)) {
+            throw new BadRequestException("Event start time must be in the future");
+        }
+
+        if (!endsAt.isAfter(startsAt)) {
+            throw new BadRequestException("Event end time must be after start time");
         }
     }
 }
