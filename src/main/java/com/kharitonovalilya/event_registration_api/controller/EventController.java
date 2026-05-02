@@ -31,6 +31,11 @@ public class EventController {
         return eventService.getAllEvents(status);
     }
 
+    @GetMapping("/with-seats")
+    public List<EventResponse> getEventsWithAvailableSeats(){
+        return eventService.getEventsWithAvailableSeats();
+    }
+
     @GetMapping("/{id}")
     public EventResponse getEventById(@PathVariable Long id){
         return eventService.getEventById(id);

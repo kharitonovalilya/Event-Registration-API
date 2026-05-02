@@ -50,7 +50,16 @@ public class RegistrationService {
             throw new ConflictException("User is already registered for this event");
         }
 
-        ensureUserHasNoOverlappingRegistration(user, event);
+        boolean hasOverlappingRegistration = registrationRepository.existsOverlappingActiveRegistration(
+                user,
+                ACTIVE_STATUSES,
+                event.getStartsAt(),
+                event.getEndsAt()
+        );
+
+        if (hasOverlappingRegistration) {
+            throw new ConflictException("User already has an active registration for overlapping event");
+        }
 
         long confirmedCount = registrationRepository.countByEventAndStatus(event, RegistrationStatus.CONFIRMED);
         Registration registration;
@@ -129,20 +138,5 @@ public class RegistrationService {
     private Event findEventByIdForUpdate(Long eventId){
         return eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
-    }
-
-    private void ensureUserHasNoOverlappingRegistration(User user, Event targetEvent){
-        List<Registration> activeRegistrations = registrationRepository.findByUserAndStatusIn(user, ACTIVE_STATUSES);
-        for(Registration registration : activeRegistrations){
-            Event existingEvent = registration.getEvent();
-
-            if(eventsOverlap(existingEvent, targetEvent)){
-                throw new ConflictException("User already has an active registration for overlapping event");
-            }
-        }
-    }
-
-    private boolean eventsOverlap(Event firstEvent, Event secondEvent){
-        return (firstEvent.getStartsAt().isBefore(secondEvent.getEndsAt())) && (secondEvent.getStartsAt().isBefore(firstEvent.getEndsAt()));
     }
 }

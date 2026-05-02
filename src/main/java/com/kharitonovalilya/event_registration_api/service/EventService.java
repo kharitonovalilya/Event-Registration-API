@@ -7,6 +7,7 @@ import com.kharitonovalilya.event_registration_api.entity.Event;
 import com.kharitonovalilya.event_registration_api.exception.BadRequestException;
 import com.kharitonovalilya.event_registration_api.exception.NotFoundException;
 import com.kharitonovalilya.event_registration_api.model.EventStatus;
+import com.kharitonovalilya.event_registration_api.model.RegistrationStatus;
 import com.kharitonovalilya.event_registration_api.repository.EventRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,14 @@ public class EventService {
             responses.add(EventResponse.from(event));
         }
         return responses;
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventResponse> getEventsWithAvailableSeats(){
+        return eventRepository.findEventsWithAvailableSeats(
+                EventStatus.OPEN,
+                RegistrationStatus.CONFIRMED
+        ).stream().map(EventResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
