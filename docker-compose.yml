@@ -4,7 +4,7 @@ services:
     container_name: event-registration-db
     environment:
       POSTGRES_DB: event_registration
-      POSGRES_USER: postgres
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"

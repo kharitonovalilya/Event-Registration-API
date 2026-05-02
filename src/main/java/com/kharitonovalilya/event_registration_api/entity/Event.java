@@ -92,10 +92,11 @@ public class Event {
         this.status = EventStatus.CLOSED;
     }
 
-    public void cancel() {
-        this.status = EventStatus.CANCELLED;
-    }
     public void reopen() {
         this.status = EventStatus.OPEN;
+    }
+
+    public void cancel() {
+        this.status = EventStatus.CANCELLED;
     }
 }

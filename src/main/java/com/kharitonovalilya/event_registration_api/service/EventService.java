@@ -4,11 +4,13 @@ import com.kharitonovalilya.event_registration_api.dto.request.CreateEventReques
 import com.kharitonovalilya.event_registration_api.dto.request.UpdateEventStatusRequest;
 import com.kharitonovalilya.event_registration_api.dto.response.EventResponse;
 import com.kharitonovalilya.event_registration_api.entity.Event;
+import com.kharitonovalilya.event_registration_api.entity.Registration;
 import com.kharitonovalilya.event_registration_api.exception.BadRequestException;
 import com.kharitonovalilya.event_registration_api.exception.NotFoundException;
 import com.kharitonovalilya.event_registration_api.model.EventStatus;
 import com.kharitonovalilya.event_registration_api.model.RegistrationStatus;
 import com.kharitonovalilya.event_registration_api.repository.EventRepository;
+import com.kharitonovalilya.event_registration_api.repository.RegistrationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,17 @@ import java.util.List;
 
 @Service
 public class EventService {
-    private final EventRepository eventRepository;
+    private static final List<RegistrationStatus> ACTIVE_STATUSES = List.of(
+            RegistrationStatus.CONFIRMED,
+            RegistrationStatus.WAITLISTED
+    );
 
-    public EventService(EventRepository eventRepository){
+    private final EventRepository eventRepository;
+    private final RegistrationRepository registrationRepository;
+
+    public EventService(EventRepository eventRepository, RegistrationRepository registrationRepository){
         this.eventRepository = eventRepository;
+        this.registrationRepository = registrationRepository;
     }
 
     @Transactional
@@ -77,10 +86,14 @@ public class EventService {
     public EventResponse updateEventStatus(Long id, UpdateEventStatusRequest request){
         Event event = findEventById(id);
 
+        if (event.getStatus() == EventStatus.CANCELLED) {
+            throw new BadRequestException("Cancelled event cannot be reopened or changed");
+        }
+
         switch (request.getStatus()) {
             case OPEN -> event.reopen();
             case CLOSED -> event.close();
-            case CANCELLED -> event.cancel();
+            case CANCELLED -> cancelEvent(event);
             default -> throw new BadRequestException("Unsupported event status");
         }
 
@@ -90,5 +103,13 @@ public class EventService {
     private Event findEventById(Long id){
         return eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
+    }
+
+    private void cancelEvent(Event event){
+        event.cancel();
+        List<Registration> activeRegistrations = registrationRepository.findByEventAndStatusIn(event, ACTIVE_STATUSES);
+        for(Registration registration : activeRegistrations){
+            registration.cancel();
+        }
     }
 }
